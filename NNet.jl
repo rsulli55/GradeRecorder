@@ -16,8 +16,6 @@ mutable struct NeuralNet
     NeuralNet(sizes::Array{Int64, 1}) =
         new(length(sizes), sizes, [randn(y, 1) for y in sizes[2:end]],
                 [randn(y, x)/sqrt(x) for (x,y) in zip(sizes[1:end-1], sizes[2:end])])
-
-    #= possibly add a constructor here =#
 end
 
 
@@ -30,9 +28,6 @@ function sigmoid_prime(z)
 end
 
 function cost_derivative(output_acts, y)
-    # println("acts: $output_acts")
-    # println("y: $y")
-    # println(output_acts - y)
     return (output_acts - y)
 end
 
@@ -53,18 +48,12 @@ function SGD(net::NeuralNet, training_data, epochs::Int64, mini_batch_size::Int6
     end
 
     n = length(training_data)
-    # println(n)
 
     for j in 1:epochs
         shuffle!(training_data)
-
-        # println("shuffled")
-
         mini_batches = [training_data[k:k+mini_batch_size-1] for k in 1:mini_batch_size:n]
 
-        # println("got mini_batch")
         for mb in mini_batches
-            #println("mb=$mb")
             update_mini_batch(net, mb, eta, lambda, n)
         end
 
@@ -83,23 +72,15 @@ function SGD(net::NeuralNet, trainfiles::Int64, epochs::Int64, mini_batch_size::
     #     n_test = length(test_data)
     # end
 
-
-    # println(n)
-
     for j in 1:epochs
         for t in 1:trainfiles
             training_data, validation_data = load_data(t)
 
             n = length(training_data)
-            # shuffle!(training_data)
-
-            # println("shuffled")
 
             mini_batches = [training_data[k:k+mini_batch_size-1] for k in 1:mini_batch_size:n]
 
-            # println("got mini_batch")
             for mb in mini_batches
-                #println("mb=$mb")
                 update_mini_batch(net, mb, eta, lambda, n*trainfiles)
                 ## the total amount of trainding data is n * trainfiles
             end
@@ -120,11 +101,8 @@ function update_mini_batch(net::NeuralNet, mini_batch, eta::Float64, lambda::Flo
 
 
     for (x,y) in mini_batch
-        #println("x = $x, y=$y")
 
         (delta_nabla_b, delta_nabla_w) = backprop(net, x, y)
-        # println("nabla_b")
-        # println(nabla_b)
 
         nabla_b = [nb + dnb for (nb, dnb) in zip(nabla_b, delta_nabla_b)]
         nabla_w = [nw + dnw for (nw, dnw) in zip(nabla_w, delta_nabla_w)]
@@ -140,7 +118,6 @@ function backprop(net::NeuralNet, x, y)
 
     # starting activation is x
     act = x
-    # println(typeof(x))
     #keep track of the activations
     acts = Vector{Array{Float64, 2}}(undef, net.num_layers)
     acts[1] = x
@@ -148,48 +125,32 @@ function backprop(net::NeuralNet, x, y)
     i = 1
 
     for (b,w) in zip(net.biases, net.weights)
-        # println("act = $(size(act)), w = $(size(w))")
         z = w * act + b
-        # println("z = $(size(z))")
         zs[i] = z
         act = sigmoid(z)
-        # println("act = $(size(act))")
         i += 1
         acts[i] = act
 
     end
-    # println("Out of for loop")
 
-    #println("acts: $(size(acts[end])), y: $(size(y))")
     ## QUADRATIC COST DELTA
     ## delta = cost_derivative(acts[end], y) .* sigmoid_prime(zs[end])
 
     ### CROSS_ENTROPY COST DELTA
     delta = acts[end] - y
-    # println("delta")
 
     nabla_b[end] = delta
-    # println("delta = $(size(delta)), trans(act[end-1]) = $(size(transpose(acts[end-1]))) ")
     nabla_w[end] = delta * transpose(acts[end-1])
-    #
-    # println("zs: $(size(zs)), acts: $(size(acts)), nabla_w: $(size(nabla_w))")
-    # println("num_layers = $(net.num_layers)")
-    #
+    
     for l in 1:net.num_layers - 2
         z = zs[end - l]
         sp = sigmoid_prime(z)
-        # println("$(size(sp))")
 
         delta = (transpose(net.weights[end-l+1]) * delta)  .* sp
-        # println("delta = $(size(delta))")
         nabla_b[end-l] = delta
         nabla_w[end-l] = delta * transpose(acts[end-l-1])
     end
 
-    # println("nabla_b")
-    # println(nabla_b)
-    # println("nabla_w")
-    # println(nabla_w)
     return (nabla_b, nabla_w)
 end
 
@@ -212,17 +173,13 @@ function load_data(n::Int64)
 
     B = Array{Float64, 1}(undef, size(A)[2])
     read!("/home/ryan/Julia/transformedMNIST$n/labels$n.dat", B)
-    # B = read(open("/home/ryan/Julia/transformedMNIST$n/labels$n.dat"), Float64, size(A)[2])
     train_data = Vector{Tuple{Array{Float64,2}, Array{Float64, 2}}}(undef, size(A)[2])
-    #println("After traindata")
 
 
     for i in 1:size(A)[2]
-        #println("i = $i")
         dig = A[:, i]
         newDig = Array{Float64, 2}(undef, 784, 1)
         for j in eachindex(dig)
-            #println("j = $j")
             newDig[j] = convert(Int,dig[j].val.i) / 255.0
         end
         train_data[i] = (newDig, vectorize_label(B[i]+1))
@@ -234,7 +191,6 @@ end
     validation_data = train_data[1:10_000]
 
     return (train_data[10_001:end], validation_data) #, test_data)
-    # return train_data
 end
 
 function init_net(net::NeuralNet)
@@ -266,12 +222,7 @@ function save_net(net::NeuralNet)
     close(f)
 end
 
-## eventually add directory
 function load_net()
-    # biases = Vector{typeof(net.biases[1])}
-    # weights = Vector{typeof(net.weights[1])}
-    ## maybe try and do this a better way
-
     net = NNet.NeuralNet([784,100,10])
 
     biases = Vector{Any}(nothing, length(net.biases))
@@ -293,7 +244,6 @@ function load_net()
 end
 
 function evaluate(net, test_data)
-    # predictions = [feedforward(net, x) for (x, _) in test_data]
     results = [vectorize_label(Float64(argmax(feedforward(net, x))[1])) for (x,y) in test_data]
     n_correct = 0
 

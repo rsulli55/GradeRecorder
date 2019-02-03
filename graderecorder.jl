@@ -8,7 +8,6 @@ import NNet
 
 function loadIDS(path::String, delim::Char)
     students = CSV.read(path, delim=delim)
-    # students = CSV.read(path, delim=delim)
     intIds = students[:, 1]
     return intIds
 end
@@ -32,23 +31,9 @@ for l in 1:numIDS
     path = directory * quizName * "ID-$l.png"
     id = load(path)
     origBW = Gray.(id) .> 0.9
-    # imshow(id)
-    # blurred  = imfilter(id, Kernel.gaussian(0.15))
-
     blurred  = imfilter(id, Kernel.gaussian(0.35))
-    # imshow(blurred)
-    #gray = Gray.(blurred).> .90
-    gray = Gray.(blurred) #.> 0.90
+    gray = Gray.(blurred) 
     bw = gray .> 0.9
-
-    #gray = erode(gray)
-    #imshow(gray)
-    # for i in 3:10
-    #     corners = fastcorners(gray, i)
-    #     imshow(corners, name="number $i")
-    # end
-
-    #corners = fastcorners(gray, 4)
 
     labels = label_components(bw)
     boxes = component_boxes(labels)
@@ -56,16 +41,9 @@ for l in 1:numIDS
     numBoxes = length(boxes)
     keep = fill(true, numBoxes)
 
-    #h, w = size(gray)
-
     #remove any "big" boxes or any "small" boxes
     for i in 1:numBoxes
     b = boxes[i]
-    # if abs(b[1][1] - 1) + abs(b[1][2] - 1) < 10 &&
-    #     abs(b[2][1] - h) + abs(b[2][2] - w) < 10
-    #     # println("In if")
-    #     keep[i] = false
-    # end
 
     if (b[2][1] - b[1][1]) * (b[2][2] - b[1][2]) <= 200 ||
     (b[2][1] - b[1][1]) * (b[2][2] - b[1][2]) >= 3600
@@ -79,24 +57,20 @@ for l in 1:numIDS
 
     end
 
-    # println(length(keep), length(boxes))
     boxes1 = boxes[keep]
     numBoxes=length(boxes1)
     keep1 = fill(true, numBoxes)
 
 
-    # for i in 3:10
     #remove overlapping boxes
     for i in 1:numBoxes, j in 1:numBoxes
         if j != i && keep1[i] && keep1[j] && compareBoxes(boxes1[i], boxes1[j])
-    # cleprintln("box $j is in box $i")
+        #println("box $j is in box $i")
         keep1[j] = false
         end
     end
 
     boxes2 = boxes1[keep1]
-    #id_digits = Array{Array{Gray{Float64},2}, 1}(length(boxes2))
-    #
 
     try
         mkdir(directory * quizName *"ID$l-digits/")
@@ -106,12 +80,8 @@ for l in 1:numIDS
     for k in eachindex(boxes2)
 
         b = boxes2[k]
-        # println(b)
-        # imshow(gray[b[1][1]:b[2][1], b[1][2]:b[2][2]])
-        # println("The type of the digit is:", typeof(gray[b[1][1]:b[2][1], b[1][2]:b[2][2]]))
         dig_orig = origBW[b[1][1]+2:b[2][1]-2, b[1][2]+2:b[2][2]-2]
         dig_processed = bw[b[1][1]+2:b[2][1]-2, b[1][2]+2:b[2][2]-2]
-        #println(size(dig))
 
         #try resizing digits later
 
@@ -126,7 +96,6 @@ for l in 1:numIDS
         #     dig_resized[i] = xor(true, dig_resized[i]
         # end
 
-        # imshow(dig_resized)
         ###
         ## change this back to dig_resized possibly!!!!!
         ####
@@ -134,11 +103,9 @@ for l in 1:numIDS
         save(directory * quizName *"ID$l-digits/dig$(k)_processed.png", dig_processed)
 
     end
-    # imshow(id)
-#
+
     if length(boxes2) != 10
         println("ID $l has $(length(boxes2)) digits")
-     #println("ID $l does not have 8 digits")
     end
 end
 end
@@ -165,7 +132,7 @@ function saveGrades(directory::String, quizName::String, idFile::String, idDelim
     println("indices")
     println(indices)
 
-    ### keys has no order!!! may need to do it another way
+    ## keys has no order may need to do it another way
     foundIDS = [intIds[idMap[i]] for i in 1:length(predicted) if indices[i]]
     println(foundIDS)
 
@@ -212,124 +179,6 @@ function compareBoxes(b,c)
     return almostContained && smallerArea
 end
 
-#l = 39
-#### OLD PROCESSIDS
-#####
-# function processIDS(directory::String, numIDS::Int64)
-# for l in 1:numIDS
-#     path = directory * "density200crop-$l.png"
-#     id = load(path)
-#     origBW = Gray.(id) .> 0.9
-#     # imshow(id)
-#     # blurred  = imfilter(id, Kernel.gaussian(0.15))
-#
-#     blurred  = imfilter(id, Kernel.gaussian(0.35))
-#     # imshow(blurred)
-#     #gray = Gray.(blurred).> .90
-#     gray = Gray.(blurred) #.> 0.90
-#     bw = gray .> 0.9
-#     #gray = erode(gray)
-#     # imshow(gray)
-#     # for i in 3:10
-#     #     corners = fastcorners(gray, i)
-#     #     imshow(corners, name="number $i")
-#     # end
-#
-#     #corners = fastcorners(gray, 4)
-#
-#     labels = label_components(bw)
-#     boxes = component_boxes(labels)
-#
-#     numBoxes = length(boxes)
-#     keep = fill(true, numBoxes)
-#
-#     #h, w = size(gray)
-#
-#     #remove any "big" boxes or any "small" boxes
-#     for i in 1:numBoxes
-#     b = boxes[i]
-#     # if abs(b[1][1] - 1) + abs(b[1][2] - 1) < 10 &&
-#     #     abs(b[2][1] - h) + abs(b[2][2] - w) < 10
-#     #     # println("In if")
-#     #     keep[i] = false
-#     # end
-#
-#     if (b[2][1] - b[1][1]) * (b[2][2] - b[1][2]) <= 200 ||
-#     (b[2][1] - b[1][1]) * (b[2][2] - b[1][2]) >= 3600
-#     # println("We remove box $i because of its size")
-#         keep[i] = false
-#     end
-#
-#     if (b[2][1] - b[1][1]) < 10 || (b[2][2] - b[1][2]) < 10
-#         keep[i] = false
-#     end
-#
-#     end
-#
-#     # println(length(keep), length(boxes))
-#     boxes1 = boxes[keep]
-#     numBoxes=length(boxes1)
-#     keep1 = fill(true, numBoxes)
-#
-#
-#     # for i in 3:10
-#     #remove overlapping boxes
-#     for i in 1:numBoxes, j in 1:numBoxes
-#         if j != i && keep1[i] && keep1[j] && compareBoxes(boxes1[i], boxes1[j])
-#     # cleprintln("box $j is in box $i")
-#         keep1[j] = false
-#         end
-#     end
-#
-#     boxes2 = boxes1[keep1]
-#     #id_digits = Array{Array{Gray{Float64},2}, 1}(length(boxes2))
-#     #
-#
-#     try
-#         mkdir(directory * "quiz$l-digits/")
-#     catch E
-#         #println("directory already exists")
-#     end
-#     for k in eachindex(boxes2)
-#
-#         b = boxes2[k]
-#         # println(b)
-#         # imshow(gray[b[1][1]:b[2][1], b[1][2]:b[2][2]])
-#         # println("The type of the digit is:", typeof(gray[b[1][1]:b[2][1], b[1][2]:b[2][2]]))
-#         dig_orig = origBW[b[1][1]+2:b[2][1]-2, b[1][2]+2:b[2][2]-2]
-#         dig_processed = bw[b[1][1]+2:b[2][1]-2, b[1][2]+2:b[2][2]-2]
-#         #println(size(dig))
-#
-#         #try resizing digits later
-#
-#         # sz = (28,28)
-#         # σ = map((o,n)->0.5*o/n, size(dig), sz)
-#         # kern = KernelFactors.gaussian(σ)   # from ImageFiltering
-#         # dig_resized = imresize(imfilter(dig, kern, NA()), sz)
-#         #id_digits[k] = dig_resized
-#         #
-#         # invert the colors of the digit
-#         # for i = 1:length(dig_resized)
-#         #     dig_resized[i] = xor(true, dig_resized[i]
-#         # end
-#
-#         # imshow(dig_resized)
-#         ###
-#         ## change this back to dig_resized possibly!!!!!
-#         ####
-#         save(directory * "quiz$l-digits/dig$(k)_orig.png", dig_orig)
-#         save(directory * "quiz$l-digits/dig$(k)_processed.png", dig_processed)
-#
-#     end
-#     # imshow(id)
-# #
-#     if length(boxes2) != 10
-#         println("ID $l has $(length(boxes2)) digits")
-#      #println("ID $l does not have 8 digits")
-#     end
-# end
-# end
-
 function getPredictions(directory::String, quizName::String, numIDS::Int64, numDigits::Int64)
     ids = [[load(directory* quizName * "ID$l-digits/dig$(k)_orig.png") for k in 1:numDigits] for l in 1:numIDS]
     invertedIDS = []
@@ -341,9 +190,6 @@ function getPredictions(directory::String, quizName::String, numIDS::Int64, numD
         finalID = []
         for k in 1:numDigits
             dig = ids[l][k]
-            # println(size(dig))
-            # imshow(dig)
-            # invertedDig = zeros(length(dig), 1)
             invertedDig = zeros(size(dig))
 
 
@@ -351,9 +197,10 @@ function getPredictions(directory::String, quizName::String, numIDS::Int64, numD
                 #swap black and white and then normalize
                 invertedDig[i] = (255 - convert(Int,dig[i].val.i)) / 255.0
             end
+
             #try to remove any fully black rows or columns
             ## the 1s are being classified as 8s and I think its because
-            ## we are removing too much and then we are stretching it a lot
+            ## we are removing too much and then we are stretching it 
             ## when we resize
             ## so lets try keeping a counter so we do not remove too many rows/columns
             push!(invertedID, invertedDig)
@@ -395,7 +242,8 @@ function getPredictions(directory::String, quizName::String, numIDS::Int64, numD
 
             ## find the center of mass
             rows,cols = size(resizedDig)
-            #
+            
+            ## Center of mass method had problems, so just go with naive center
             # totalMass = sum(resizedDig)
             # rowTotal = 0
             # for i in 1:rows
@@ -425,6 +273,8 @@ function getPredictions(directory::String, quizName::String, numIDS::Int64, numD
             for i in 1:rows, j in 1:cols
                 finalDig[14 - midRow + i, 14 - midCol + j] = resizedDig[i, j]
             end
+
+            ## Part of center of mass method, the copying would sometime run pass the boundaries
             # try
             #     for i in 1:rows, j in 1:cols
             #     # println("l = $l, k = $k")
